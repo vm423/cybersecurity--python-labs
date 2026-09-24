@@ -1,0 +1,26 @@
+[
+    {
+        "event": "login",
+        "user": "mar_vasylyshyn",
+        "result": "success",
+        "timestamp": "2026-09-24 13:04:50",
+        "args": [],
+        "kwargs": {}
+    },
+    {
+        "event": "login",
+        "user": "admin_cyber",
+        "result": "failure",
+        "timestamp": "2026-09-24 13:04:50",
+        "args": [],
+        "kwargs": {}
+    },
+    {
+        "event": "login",
+        "user": "unknown_hacker",
+        "result": "failure",
+        "timestamp": "2026-09-24 13:04:50",
+        "args": [],
+        "kwargs": {}
+    }
+]
