@@ -216,3 +216,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Віртуальне оточення
+.venv/
+venv/
+ENV/
+
+# Кеш Python та IDE
+__pycache__/
+*.pyc
+.ruff_cache/
+.idea/
+
+# Системні файли macOS
+.DS_Store
+
+# Локальні бази даних та логи лабораторної (щоб не смітити на GitHub)
+labs/lab01/data/
