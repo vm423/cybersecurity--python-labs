@@ -1,0 +1,6 @@
+host,port,service,status,response_time_ms,notes
+127.0.0.1,80,HTTP,OFFLINE,0.0,Connection refused
+127.0.0.1,443,HTTPS,OFFLINE,0.0,Connection refused
+127.0.0.1,22,SSH,OFFLINE,0.0,Connection refused
+192.168.1.50,3389,RDP,OFFLINE,0.0,[Errno 65] No route to host
+10.0.0.1,53,DNS,OFFLINE,0.0,Connection timed out

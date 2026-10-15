@@ -1,0 +1,9 @@
+{
+  "targets": [
+    {"host": "127.0.0.1", "port": 80, "service": "HTTP"},
+    {"host": "127.0.0.1", "port": 443, "service": "HTTPS"},
+    {"host": "127.0.0.1", "port": 22, "service": "SSH"},
+    {"host": "192.168.1.50", "port": 3389, "service": "RDP"},
+    {"host": "10.0.0.1", "port": 53, "service": "DNS"}
+  ]
+}
