@@ -39,7 +39,6 @@ class ServiceAvailabilityScanner:
         ipv4_pattern = r"^(\d{1,3}\.){3}\d{1,3}$"
         domain_pattern = r"^([a-zA-Z0-9-_]+\.)+[a-zA-Z]{2,}$"
 
-        # Виправлено SIM103: повернення умови напряму
         return bool(
             re.match(ipv4_pattern, host)
             or re.match(domain_pattern, host)
@@ -48,34 +47,63 @@ class ServiceAvailabilityScanner:
 
     def load_targets(self) -> list[dict[str, Any]]:
         if not self.targets_path.exists():
+            logger.error(f"Файл цілей не знайдено: {self.targets_path}")
             raise FileNotFoundError(f"Файл цілей не знайдено: {self.targets_path}")
 
         logger.info(
             f"Starting service availability scan from target list {self.targets_path}..."
         )
 
-        if self.targets_path.suffix.lower() == ".json":
-            with open(self.targets_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                return data.get("targets", data)
-        elif self.targets_path.suffix.lower() == ".csv":
+        ext = self.targets_path.suffix.lower()
+
+        # Безпечна обробка JSON
+        if ext == ".json":
+            try:
+                with open(self.targets_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    return data.get("targets", data)
+            except json.JSONDecodeError as e:
+                logger.error(f"Помилка парсингу JSON файлу {self.targets_path}: {e}")
+                raise ValueError(f"Некоректний формат JSON у файлі: {e}") from e
+            except PermissionError as e:
+                logger.error(f"Немає прав на читання файлу {self.targets_path}: {e}")
+                raise PermissionError(f"Заборонено доступ до файлу: {e}") from e
+            except OSError as e:
+                logger.error(f"Помилка введення/виведення при читанні JSON: {e}")
+                raise RuntimeError(f"Помилка читання файлу: {e}") from e
+
+        # Безпечна обробка CSV
+        elif ext == ".csv":
             targets = []
-            with open(self.targets_path, "r", encoding="utf-8") as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    targets.append(
-                        {
-                            "host": row["host"],
-                            "port": int(row["port"]),
-                            "service": row.get("service", "UNKNOWN"),
-                        }
-                    )
-            return targets
+            try:
+                with open(self.targets_path, "r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        if "host" not in row or "port" not in row:
+                            logger.warning(f"Пропущено некоректний рядок CSV: {row}")
+                            continue
+                        targets.append(
+                            {
+                                "host": row["host"],
+                                "port": int(row["port"]),
+                                "service": row.get("service", "UNKNOWN"),
+                            }
+                        )
+                return targets
+            except csv.Error as e:
+                logger.error(f"Помилка розбору CSV файлу {self.targets_path}: {e}")
+                raise ValueError(f"Некоректний формат CSV у файлі: {e}") from e
+            except PermissionError as e:
+                logger.error(f"Немає прав на читання файлу {self.targets_path}: {e}")
+                raise PermissionError(f"Заборонено доступ до файлу: {e}") from e
+            except OSError as e:
+                logger.error(f"Помилка введення/виведення при читанні CSV: {e}")
+                raise RuntimeError(f"Помилка читання файлу: {e}") from e
+
         else:
             raise ValueError("Підтримуються лише JSON або CSV формати вхідних файлів.")
 
     def check_port(self, host: str, port: int) -> tuple[str, float, str]:
-        # Виправлено DTZ005: додано timezone.utc
         start_time = datetime.now(timezone.utc)
         try:
             with socket.create_connection((host, port), timeout=self.timeout):
@@ -149,20 +177,25 @@ class ServiceAvailabilityScanner:
         print(f"Offline       : {offline_count} ({offline_pct:.1f}%)")
 
     def save_csv(self, results: list[ServiceStatusResult], out_path: Path) -> None:
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(out_path, "w", encoding="utf-8", newline="") as f:
-            writer = csv.DictWriter(
-                f,
-                fieldnames=[
-                    "host",
-                    "port",
-                    "service",
-                    "status",
-                    "response_time_ms",
-                    "notes",
-                ],
-            )
-            writer.writeheader()
-            for r in results:
-                writer.writerow(asdict(r))
-        logger.info(f"Detailed scan report saved to {out_path}")
+        try:
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(out_path, "w", encoding="utf-8", newline="") as f:
+                writer = csv.DictWriter(
+                    f,
+                    fieldnames=[
+                        "host",
+                        "port",
+                        "service",
+                        "status",
+                        "response_time_ms",
+                        "notes",
+                    ],
+                )
+                writer.writeheader()
+                for r in results:
+                    writer.writerow(asdict(r))
+            logger.info(f"Detailed scan report saved to {out_path}")
+        except PermissionError as e:
+            logger.error(f"Немає прав для запису у файл {out_path}: {e}")
+        except OSError as e:
+            logger.error(f"Помилка створення або запису файлу результатів: {e}")
